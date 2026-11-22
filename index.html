@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>包装技術・包装機械 テスト対策アプリ</title>
+  <style>
+    :root {
+      --bg: #f4f6f9;
+      --card: #ffffff;
+      --primary: #1e40af;
+      --primary-light: #eff6ff;
+      --accent: #0f766e;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --correct: #15803d;
+      --correct-bg: #dcfce7;
+      --wrong: #b91c1c;
+      --wrong-bg: #fee2e2;
+      --warn: #b45309;
+      --warn-bg: #fef3c7;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    header {
+      background: var(--primary);
+      color: #fff;
+      padding: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    header p {
+      margin: 4px 0 0;
+      font-size: 0.8rem;
+      opacity: 0.9;
+    }
+
+    .nav-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      padding: 10px 12px;
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 62px;
+      z-index: 15;
+    }
+
+    .tab-btn {
+      border: 1px solid var(--border);
+      background: #f9fafb;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 4px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 14px 12px 48px;
+    }
+
+    .stats-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      font-size: 0.85rem;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: var(--primary-light);
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    .badge.weak {
+      background: var(--warn-bg);
+      color: var(--warn);
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+      margin-bottom: 14px;
+    }
+
+    .question-text {
+      font-size: 1rem;
+      font-weight: 700;
+      margin: 0 0 14px;
+    }
+
+    .choices {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .choice-btn {
+      text-align: left;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      font-size: 0.92rem;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .choice-btn:hover:not(:disabled) {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .choice-btn.correct {
+      background: var(--correct-bg);
+      border-color: var(--correct);
+      color: var(--correct);
+      font-weight: 700;
+    }
+
+    .choice-btn.wrong {
+      background: var(--wrong-bg);
+      border-color: var(--wrong);
+      color: var(--wrong);
+      font-weight: 700;
+    }
+
+    .ox-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .ox-btn {
+      padding: 18px;
+      font-size: 1.25rem;
+      font-weight: 700;
+      border-radius: 12px;
+      border: 2px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .ox-btn.correct {
+      background: var(--correct-bg);
+      border-color: var(--correct);
+      color: var(--correct);
+    }
+
+    .ox-btn.wrong {
+      background: var(--wrong-bg);
+      border-color: var(--wrong);
+      color: var(--wrong);
+    }
+
+    .feedback {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      display: none;
+    }
+
+    .feedback.show {
+      display: block;
+    }
+
+    .feedback.ok {
+      background: var(--correct-bg);
+      color: #14532d;
+      border: 1px solid #86efac;
+    }
+
+    .feedback.ng {
+      background: var(--wrong-bg);
+      color: #7f1d1d;
+      border: 1px solid #fca5a5;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 10px;
+      padding: 11px 16px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      flex: 1;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: var(--text);
+    }
+
+    .btn-warn {
+      background: var(--warn-bg);
+      color: var(--warn);
+      border: 1px solid #fcd34d;
+    }
+
+    .flashcard {
+      min-height: 210px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 24px 18px;
+      border: 2px dashed #cbd5e1;
+      border-radius: 14px;
+      background: #f8fafc;
+      cursor: pointer;
+    }
+
+    .flashcard-front {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .flashcard-back {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid #cbd5e1;
+      font-size: 0.92rem;
+      color: var(--accent);
+      font-weight: 600;
+      width: 100%;
+    }
+
+    .empty-msg {
+      text-align: center;
+      padding: 28px 16px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>包装技術・包装機械 テスト対策アプリ</h1>
+    <p>4択・○×・暗記カード・苦手復習</p>
+  </header>
+
+  <nav class="nav-tabs" aria-label="学習モード">
+    <button class="tab-btn active" data-mode="mc">4択クイズ</button>
+    <button class="tab-btn" data-mode="ox">○×クイズ</button>
+    <button class="tab-btn" data-mode="card">暗記カード</button>
+    <button class="tab-btn" data-mode="weak">苦手復習</button>
+  </nav>
+
+  <main class="container" id="app"></main>
+
+  <script>
+    const STORAGE_KEY = "omori_quiz_weak_ids_v1";
+
+    const MC_QUESTIONS = [
+      {
+        id: "mc1",
+        category: "包装の基本機能・適正条件",
+        q: "包装資材・包装設計に求められる基本的な条件や適正として、最も適切な組み合わせはどれか？",
+        choices: [
+          "重く高価であること、異物混入を許容すること、使い捨て前提であること",
+          "保護機能、安価、均一品質で安定供給、軽く荷扱・輸送に便利、衛生的で異物混入がない、3R適正、CO2削減、植物由来など",
+          "耐熱性のみを重視し、輸送性や環境負荷は考慮しないこと",
+          "開封しにくさを最優先とし、表示や識別性を省くこと"
+        ],
+        answer: 1,
+        exp: "保護機能、安価、均一品質で安定供給、軽く荷扱・輸送に便利、衛生的で異物混入がない、3R適正、CO2削減、植物由来などが条件です。"
+      },
+      {
+        id: "mc2",
+        category: "包装材料・プラスチックフィルム",
+        q: "ヒートシール性（熱融着性）に優れ、ラミネート包装のシーラント層として広く使われる代表的な樹脂はどれか？",
+        choices: [
+          "ポリエチレン（PE）・ポリプロピレン（PP）",
+          "ポリ塩化ビニルのみ（PVC単体）",
+          "ポリスチレン発泡体（EPS）のみ",
+          "アルミニウム箔（AL）単体"
+        ],
+        answer: 0,
+        exp: "PEやPPはヒートシール性や加工性に優れ、多層フィルムのシーラント（内面接着層）として広く用いられます。"
+      },
+      {
+        id: "mc3",
+        category: "バリア性・保存性",
+        q: "酸素や水蒸気、光などを遮断して内容物の酸化や変質を防ぐ目的で用いられる包装技術・資材の特徴として正しいものはどれか？",
+        choices: [
+          "ガスバリア性や遮光性を高めることで、品質保持期間の延長につながる",
+          "通気性を極限まで高めることで、すべての食品の鮮度を保つ",
+          "UV光を透過させることで、内容物の劣化を早める",
+          "吸湿性を高めることで、乾燥食品を湿らせる"
+        ],
+        answer: 0,
+        exp: "バリア性（酸素・水蒸気遮断）や遮光性を高めることで、酸化・吸湿・変色・風味劣化を抑え、品質保持に役立ちます。"
+      },
+      {
+        id: "mc4",
+        category: "包装機械・充填・シール",
+        q: "包装機械におけるヒートシール工程で、シール不良（融着不足や焼き切れ）を防ぐために管理すべき主な要素はどれか？",
+        choices: [
+          "温度・圧力・加熱時間（滞留時間）",
+          "包装室の室温のみ",
+          "フィルムの印刷色数のみ",
+          "段ボールのテープ幅のみ"
+        ],
+        answer: 0,
+        exp: "ヒートシールでは「温度・圧力・時間」のバランスが重要で、どれかが欠けるとシール強度不足や溶断・焦げの原因になります。"
+      },
+      {
+        id: "mc5",
+        category: "包装機械・安全と品質",
+        q: "包装機械の運転・段取り替えや異常停止時に、安全確保と品質維持のために基本となる対応はどれか？",
+        choices: [
+          "非常停止・動力遮断の確認と、異常原因の除去・再始動手順の遵守",
+          "安全カバーを外したまま高速運転して確認する",
+          "不良品が混ざっていてもそのまま出荷ラインへ流す",
+          "センサーを無効化してアラームを鳴らさないようにする"
+        ],
+        answer: 0,
+        exp: "機械操作では安全装置・非常停止の確認と、不良原因の解消・確認が基本です。"
+      },
+      {
+        id: "mc6",
+        category: "環境対応・3R",
+        q: "3R（リデュース・リユース・リサイクル）のうち、廃棄物の発生そのものを抑える取り組みはどれか？",
+        choices: [
+          "リデュース（Reduce）",
+          "リユース（Reuse）",
+          "リサイクル（Recycle）",
+          "サーマルリカバリー（熱回収）"
+        ],
+        answer: 0,
+        exp: "Reduceは減量化・発生抑制、Reuseは再使用、Recycleは再資源化を指します。"
+      }
+    ];
+
+    const OX_QUESTIONS = [
+      {
+        id: "ox1",
+        category: "包装の基本機能",
+        q: "包装の重要な役割の一つは、輸送や保管中の衝撃・振動・汚れなどから内容物を保護することである。",
+        answer: true,
+        exp: "○です。内容物の保護は包装の最も基本的な機能の一つです。"
+      },
+      {
+        id: "ox2",
+        category: "包装資材",
+        q: "包装資材は重くてもコストが高くても、内容物さえ入れば問題ない。",
+        answer: false,
+        exp: "×です。軽く荷扱・輸送に便利であること、安価で安定供給できることなども重要な条件です。"
+      },
+      {
+        id: "ox3",
+        category: "衛生管理",
+        q: "食品や医療・工業製品などの包装では、異物混入の防止や衛生面の確保が重要である。",
+        answer: true,
+        exp: "○です。衛生的で異物混入がないことは包装に求められる大切な要素です。"
+      },
+      {
+        id: "ox4",
+        category: "環境対応",
+        q: "3R適正やCO2削減、植物由来素材の活用などは、近年の包装設計において重視される観点である。",
+        answer: true,
+        exp: "○です。環境負荷低減（3R、CO2削減、バイオマス・植物由来など）は重要な要件です。"
+      },
+      {
+        id: "ox5",
+        category: "包装機械",
+        q: "包装機械の稼働中は、手や工具をシール部や可動部に近づけても安全である。",
+        answer: false,
+        exp: "×です。挟み込みや火傷・切断などの重大災害につながるため、必ず停止・安全確認を行います。"
+      }
+    ];
+
+    const FLASHCARDS = [
+      {
+        id: "fc1",
+        front: "包装資材・設計の主な条件（まとめ）",
+        back: "保護機能、安価、均一品質で安定供給、軽く荷扱・輸送に便利、衛生的で異物混入がない、3R適正、CO2削減、植物由来など。"
+      },
+      {
+        id: "fc2",
+        front: "ヒートシールの3要素",
+        back: "温度・圧力・時間。材質や厚み、ライン速度に合わせて適正条件を設定・維持する。"
+      },
+      {
+        id: "fc3",
+        front: "バリア性（ガス・水蒸気バリア）の目的",
+        back: "酸素や水蒸気などの透過を抑え、酸化・吸湿・カビ・風味劣化を防いで賞味・消費期限や品質を保つ。"
+      },
+      {
+        id: "fc4",
+        front: "3Rの意味",
+        back: "Reduce（発生抑制・減量化）、Reuse（再使用）、Recycle（再資源化）。"
+      }
+    ];
+
+    let state = {
+      mode: "mc",
+      mcIndex: 0,
+      mcAnswered: false,
+      oxIndex: 0,
+      oxAnswered: false,
+      cardIndex: 0,
+      cardFlipped: false,
+      weakIndex: 0,
+      weakAnswered: false,
+      weakIds: loadWeakIds()
+    };
+
+    function loadWeakIds() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveWeakIds() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.weakIds));
+      } catch (e) {}
+    }
+
+    function addWeak(id) {
+      if (!state.weakIds.includes(id)) {
+        state.weakIds.push(id);
+        saveWeakIds();
+      }
+    }
+
+    function removeWeak(id) {
+      state.weakIds = state.weakIds.filter((item) => item !== id);
+      saveWeakIds();
+    }
+
+    function getAllQuestionsMap() {
+      const map = {};
+      MC_QUESTIONS.forEach((item) => {
+        map[item.id] = { ...item, type: "mc" };
+      });
+      OX_QUESTIONS.forEach((item) => {
+        map[item.id] = { ...item, type: "ox" };
+      });
+      return map;
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function render() {
+      const app = document.getElementById("app");
+      document.querySelectorAll(".tab-btn").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.mode === state.mode);
+      });
+
+      if (state.mode === "mc") {
+        renderMc(app);
+      } else if (state.mode === "ox") {
+        renderOx(app);
+      } else if (state.mode === "card") {
+        renderCard(app);
+      } else if (state.mode === "weak") {
+        renderWeak(app);
+      }
+    }
+
+    function renderMc(app) {
+      const item = MC_QUESTIONS[state.mcIndex];
+      const isWeak = state.weakIds.includes(item.id);
+      app.innerHTML = `
+        <div class="stats-bar">
+          <span>4択クイズ（${state.mcIndex + 1} / ${MC_QUESTIONS.length}）</span>
+          <span>苦手登録：${state.weakIds.length}件</span>
+        </div>
+        <div class="card">
+          <span class="badge">${escapeHtml(item.category)}</span>
+          <p class="question-text">${escapeHtml(item.q)}</p>
+          <div class="choices">
+            ${item.choices.map((c, idx) => `
+              <button class="choice-btn" data-idx="${idx}" ${state.mcAnswered ? "disabled" : ""}>
+                ${idx + 1}. ${escapeHtml(c)}
+              </button>
+            `).join("")}
+          </div>
+          <div class="feedback ${state.mcAnswered ? "show ok" : ""}" id="mc-fb">
+            <strong>正解：${item.answer + 1}. ${escapeHtml(item.choices[item.answer])}</strong><br />
+            ${escapeHtml(item.exp)}
+          </div>
+          <div class="actions">
+            <button class="btn btn-warn" id="toggle-weak-mc">${isWeak ? "苦手を解除" : "苦手に登録"}</button>
+            <button class="btn btn-primary" id="next-mc">次の問題へ</button>
+          </div>
+        </div>
+      `;
+
+      app.querySelectorAll(".choice-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const picked = Number(btn.dataset.idx);
+          state.mcAnswered = true;
+          const fb = document.getElementById("mc-fb");
+          app.querySelectorAll(".choice-btn").forEach((b, i) => {
+            b.disabled = true;
+            if (i === item.answer) b.classList.add("correct");
+            else if (i === picked) b.classList.add("wrong");
+          });
+          fb.classList.remove("ok", "ng");
+          if (picked === item.answer) {
+            fb.classList.add("ok");
+            fb.innerHTML = `<strong>正解！</strong><br />${escapeHtml(item.exp)}`;
+          } else {
+            addWeak(item.id);
+            fb.classList.add("ng");
+            fb.innerHTML = `<strong>不正解（苦手リストに追加しました）</strong><br />正解は「${item.answer + 1}. ${escapeHtml(item.choices[item.answer])}」です。<br />${escapeHtml(item.exp)}`;
+          }
+          fb.classList.add("show");
+          render();
+        });
+      });
+
+      document.getElementById("toggle-weak-mc").addEventListener("click", () => {
+        if (state.weakIds.includes(item.id)) removeWeak(item.id);
+        else addWeak(item.id);
+        render();
+      });
+
+      document.getElementById("next-mc").addEventListener("click", () => {
+        state.mcIndex = (state.mcIndex + 1) % MC_QUESTIONS.length;
+        state.mcAnswered = false;
+        render();
+      });
+    }
+
+    function renderOx(app) {
+      const item = OX_QUESTIONS[state.oxIndex];
+      const isWeak = state.weakIds.includes(item.id);
+      app.innerHTML = `
+        <div class="stats-bar">
+          <span>○×クイズ（${state.oxIndex + 1} / ${OX_QUESTIONS.length}）</span>
+          <span>苦手登録：${state.weakIds.length}件</span>
+        </div>
+        <div class="card">
+          <span class="badge">${escapeHtml(item.category)}</span>
+          <p class="question-text">${escapeHtml(item.q)}</p>
+          <div class="ox-grid">
+            <button class="ox-btn" data-val="true" ${state.oxAnswered ? "disabled" : ""}>○</button>
+            <button class="ox-btn" data-val="false" ${state.oxAnswered ? "disabled" : ""}>×</button>
+          </div>
+          <div class="feedback" id="ox-fb"></div>
+          <div class="actions">
+            <button class="btn btn-warn" id="toggle-weak-ox">${isWeak ? "苦手を解除" : "苦手に登録"}</button>
+            <button class="btn btn-primary" id="next-ox">次の問題へ</button>
+          </div>
+        </div>
+      `;
+
+      app.querySelectorAll(".ox-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const picked = btn.dataset.val === "true";
+          state.oxAnswered = true;
+          const fb = document.getElementById("ox-fb");
+          app.querySelectorAll(".ox-btn").forEach((b) => {
+            const val = b.dataset.val === "true";
+            b.disabled = true;
+            if (val === item.answer) b.classList.add("correct");
+            else if (val === picked) b.classList.add("wrong");
+          });
+          fb.classList.remove("ok", "ng");
+          if (picked === item.answer) {
+            fb.classList.add("ok");
+            fb.innerHTML = `<strong>正解！</strong><br />${escapeHtml(item.exp)}`;
+          } else {
+            addWeak(item.id);
+            fb.classList.add("ng");
+            fb.innerHTML = `<strong>不正解（苦手リストに追加しました）</strong><br />${escapeHtml(item.exp)}`;
+          }
+          fb.classList.add("show");
+          render();
+        });
+      });
+
+      document.getElementById("toggle-weak-ox").addEventListener("click", () => {
+        if (state.weakIds.includes(item.id)) removeWeak(item.id);
+        else addWeak(item.id);
+        render();
+      });
+
+      document.getElementById("next-ox").addEventListener("click", () => {
+        state.oxIndex = (state.oxIndex + 1) % OX_QUESTIONS.length;
+        state.oxAnswered = false;
+        render();
+      });
+    }
+
+    function renderCard(app) {
+      const card = FLASHCARDS[state.cardIndex];
+      app.innerHTML = `
+        <div class="stats-bar">
+          <span>暗記カード（${state.cardIndex + 1} / ${FLASHCARDS.length}）</span>
+          <span>タップで答えを表示</span>
+        </div>
+        <div class="card">
+          <div class="flashcard" id="fc-box">
+            <div class="flashcard-front">${escapeHtml(card.front)}</div>
+            ${state.cardFlipped ? `<div class="flashcard-back">${escapeHtml(card.back)}</div>` : ""}
+          </div>
+          <div class="actions">
+            <button class="btn btn-secondary" id="flip-btn">${state.cardFlipped ? "答えを隠す" : "答えを見る"}</button>
+            <button class="btn btn-primary" id="next-card">次のカード</button>
+          </div>
+        </div>
+      `;
+
+      const toggleFlip = () => {
+        state.cardFlipped = !state.cardFlipped;
+        render();
+      };
+
+      document.getElementById("fc-box").addEventListener("click", toggleFlip);
+      document.getElementById("flip-btn").addEventListener("click", toggleFlip);
+      document.getElementById("next-card").addEventListener("click", () => {
+        state.cardIndex = (state.cardIndex + 1) % FLASHCARDS.length;
+        state.cardFlipped = false;
+        render();
+      });
+    }
+
+    function renderWeak(app) {
+      const map = getAllQuestionsMap();
+      const validWeakIds = state.weakIds.filter((id) => Boolean(map[id]));
+      if (validWeakIds.length !== state.weakIds.length) {
+        state.weakIds = validWeakIds;
+        saveWeakIds();
+      }
+
+      if (state.weakIds.length === 0) {
+        app.innerHTML = `
+          <div class="stats-bar">
+            <span>苦手復習モード</span>
+            <span>0件</span>
+          </div>
+          <div class="card empty-msg">
+            現在、苦手登録されている問題はありません。<br />
+            クイズで間違えた問題や「苦手に登録」した問題がここに集まります。
+          </div>
+        `;
+        return;
+      }
+
+      if (state.weakIndex >= state.weakIds.length) {
+        state.weakIndex = 0;
+      }
+
+      const currentId = state.weakIds[state.weakIndex];
+      const item = map[currentId];
+
+      app.innerHTML = `
+        <div class="stats-bar">
+          <span>苦手復習（${state.weakIndex + 1} / ${state.weakIds.length}）</span>
+          <span>${item.type === "mc" ? "4択" : "○×"}</span>
+        </div>
+        <div class="card">
+          <span class="badge weak">苦手：${escapeHtml(item.category)}</span>
+          <p class="question-text">${escapeHtml(item.q)}</p>
+          ${
+            item.type === "mc"
+              ? `<div class="choices">
+                  ${item.choices.map((c, idx) => `
+                    <button class="choice-btn" data-idx="${idx}" ${state.weakAnswered ? "disabled" : ""}>
+                      ${idx + 1}. ${escapeHtml(c)}
+                    </button>
+                  `).join("")}
+                </div>`
+              : `<div class="ox-grid">
+                  <button class="ox-btn" data-val="true" ${state.weakAnswered ? "disabled" : ""}>○</button>
+                  <button class="ox-btn" data-val="false" ${state.weakAnswered ? "disabled" : ""}>×</button>
+                </div>`
+          }
+          <div class="feedback" id="weak-fb"></div>
+          <div class="actions">
+            <button class="btn btn-secondary" id="clear-one-weak">克服済みにして外す</button>
+            <button class="btn btn-primary" id="next-weak">次の苦手問題</button>
+          </div>
+        </div>
+      `;
+
+      const fb = document.getElementById("weak-fb");
+      if (item.type === "mc") {
+        app.querySelectorAll(".choice-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const picked = Number(btn.dataset.idx);
+            state.weakAnswered = true;
+            app.querySelectorAll(".choice-btn").forEach((b, i) => {
+              b.disabled = true;
+              if (i === item.answer) b.classList.add("correct");
+              else if (i === picked) b.classList.add("wrong");
+            });
+            fb.classList.remove("ok", "ng");
+            if (picked === item.answer) {
+              fb.classList.add("ok");
+              fb.innerHTML = `<strong>正解！</strong><br />${escapeHtml(item.exp)}`;
+            } else {
+              fb.classList.add("ng");
+              fb.innerHTML = `<strong>不正解</strong><br />${escapeHtml(item.exp)}`;
+            }
+            fb.classList.add("show");
+          });
+        });
+      } else {
+        app.querySelectorAll(".ox-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const picked = btn.dataset.val === "true";
+            state.weakAnswered = true;
+            app.querySelectorAll(".ox-btn").forEach((b) => {
+              const val = b.dataset.val === "true";
+              b.disabled = true;
+              if (val === item.answer) b.classList.add("correct");
+              else if (val === picked) b.classList.add("wrong");
+            });
+            fb.classList.remove("ok", "ng");
+            if (picked === item.answer) {
+              fb.classList.add("ok");
+              fb.innerHTML = `<strong>正解！</strong><br />${escapeHtml(item.exp)}`;
+            } else {
+              fb.classList.add("ng");
+              fb.innerHTML = `<strong>不正解</strong><br />${escapeHtml(item.exp)}`;
+            }
+            fb.classList.add("show");
+          });
+        });
+      }
+
+      document.getElementById("clear-one-weak").addEventListener("click", () => {
+        removeWeak(currentId);
+        state.weakAnswered = false;
+        render();
+      });
+
+      document.getElementById("next-weak").addEventListener("click", () => {
+        state.weakIndex = (state.weakIndex + 1) % state.weakIds.length;
+        state.weakAnswered = false;
+        render();
+      });
+    }
+
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        state.mode = btn.dataset.mode;
+        state.mcAnswered = false;
+        state.oxAnswered = false;
+        state.weakAnswered = false;
+        render();
+      });
+    });
+
+    render();
+  </script>
+</body>
+</html>
