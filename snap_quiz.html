@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SnapQuiz AI - 写真から問題自動生成</title>
+<style>
+  :root {
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --text: #0f172a;
+    --sub: #64748b;
+    --border: #e2e8f0;
+    --success: #16a34a;
+    --danger: #dc2626;
+    --warning: #f59e0b;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 0;
+    line-height: 1.5;
+  }
+  header {
+    background: var(--primary);
+    color: #fff;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  header h1 { font-size: 1.15rem; margin: 0; font-weight: 700; }
+  .icon-btn {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 16px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    border: 1px solid var(--border);
+  }
+  .card h2 {
+    font-size: 1rem;
+    margin: 0 0 12px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--sub);
+    margin-bottom: 6px;
+  }
+  input[type="text"], input[type="password"], select, textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 1rem;
+    background: #fff;
+    margin-bottom: 14px;
+  }
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    transition: opacity 0.2s;
+  }
+  .btn:active { opacity: 0.8; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:disabled { background: #94a3b8; cursor: not-allowed; }
+  .btn-outline { background: #fff; color: var(--primary); border: 2px solid var(--primary); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-sm { padding: 8px 12px; font-size: 0.85rem; width: auto; display: inline-block; border-radius: 8px; }
+
+  /* ファイルアップロード枠 */
+  .upload-area {
+    border: 2px dashed #93c5fd;
+    background: #eff6ff;
+    border-radius: 12px;
+    padding: 24px 16px;
+    text-align: center;
+    cursor: pointer;
+    margin-bottom: 14px;
+  }
+  .upload-area p { margin: 4px 0 0; font-size: 0.85rem; color: var(--sub); }
+  .preview-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .preview-item {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .preview-item img { width: 100%; height: 100%; object-fit: cover; }
+
+  /* タブ切り替え */
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .tab {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    background: #e2e8f0;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    color: var(--sub);
+  }
+  .tab.active {
+    background: var(--primary);
+    color: #fff;
+  }
+
+  /* クイズ画面 */
+  .badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: #dbeafe;
+    color: var(--primary-dark);
+    margin-bottom: 8px;
+  }
+  .question-text {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+  .option-btn {
+    width: 100%;
+    text-align: left;
+    padding: 14px;
+    margin-bottom: 10px;
+    background: #fff;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .option-btn.correct { background: #dcfce7; border-color: var(--success); color: #14532d; }
+  .option-btn.wrong { background: #fee2e2; border-color: var(--danger); color: #7f1d1d; }
+  .explanation-box {
+    background: #f1f5f9;
+    padding: 14px;
+    border-radius: 10px;
+    margin-top: 14px;
+    font-size: 0.92rem;
+    border-left: 4px solid var(--primary);
+  }
+
+  /* 履歴リスト */
+  .history-item {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+    background: #fff;
+  }
+  .history-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+  .history-meta { font-size: 0.8rem; color: var(--sub); margin-bottom: 10px; }
+  .history-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* ローディング */
+  .loader {
+    display: none;
+    text-align: center;
+    padding: 20px;
+  }
+  .spinner {
+    width: 36px;
+    height: 36px;
+    border: 4px solid #e2e8f0;
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 10px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📸 SnapQuiz AI</h1>
+  <button class="icon-btn" onclick="toggleSettings()">⚙️ API設定</button>
+</header>
+
+<div class="container">
+
+  <!-- APIキー設定パネル -->
+  <div id="settings-panel" class="card hidden">
+    <h2>🔑 Gemini APIキー設定</h2>
+    <p style="font-size:0.82rem; color:var(--sub); margin-top:0;">
+      キーはこの端末のブラウザ内にのみ保存され、外部に公開されることはありません。
+    </p>
+    <label>Gemini API Key</label>
+    <input type="password" id="api-key-input" placeholder="AIzaSy...">
+    <label>使用モデル（通常は変更不要）</label>
+    <select id="model-select">
+      <option value="gemini-2.5-flash">gemini-2.5-flash（高速・推奨）</option>
+      <option value="gemini-2.5-pro">gemini-2.5-pro（高精度）</option>
+    </select>
+    <button class="btn btn-primary" onclick="saveSettings()">保存して閉じる</button>
+  </div>
+
+  <!-- メイン画面（作成・履歴・インポート） -->
+  <div id="home-view">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('create')">✨ 問題作成</div>
+      <div class="tab" onclick="switchTab('history')">📚 保存済み (<span id="history-count">0</span>)</div>
+      <div class="tab" onclick="switchTab('import')">📥 共有読込</div>
+    </div>
+
+    <!-- タブ1: 問題作成 -->
+    <div id="tab-create" class="card">
+      <h2>1. テキスト・資料の写真を選択</h2>
+      <div class="upload-area" onclick="document.getElementById('image-input').click()">
+        <div style="font-size:2rem;">📷</div>
+        <strong>タップして撮影 / 写真を選ぶ</strong>
+        <p>複数枚まとめて選択できます</p>
+      </div>
+      <input type="file" id="image-input" accept="image/*" multiple class="hidden" onchange="handleImageSelect(event)">
+      <div id="preview-grid" class="preview-grid"></div>
+
+      <h2>2. 出題設定</h2>
+      <label>タイトル（空欄なら自動命名）</label>
+      <input type="text" id="quiz-title" placeholder="例：第3章 機械要素の知識">
+
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label>問題スタイル</label>
+          <select id="quiz-style">
+            <option value="mix">ミックス（4択・○×・穴埋め）</option>
+            <option value="choice">4択問題のみ</option>
+            <option value="ox">○×問題のみ</option>
+            <option value="fill">穴埋め問題のみ</option>
+          </select>
+        </div>
+        <div style="width:110px;">
+          <label>問題数</label>
+          <select id="quiz-count">
+            <option value="5">5問</option>
+            <option value="10" selected>10問</option>
+            <option value="15">15問</option>
+            <option value="20">20問</option>
+          </select>
+        </div>
+      </div>
+
+      <label>追加の指示（任意）</label>
+      <input type="text" id="custom-prompt" placeholder="例：太字の用語を中心に、ひっかけ問題も入れて">
+
+      <button id="generate-btn" class="btn btn-primary" onclick="generateQuiz()">🚀 AIで問題を生成する</button>
+
+      <div id="loader" class="loader">
+        <div class="spinner"></div>
+        <div style="font-weight:600; color:var(--primary);">画像を解析して問題を作成中...</div>
+        <div style="font-size:0.8rem; color:var(--sub);">枚数により10〜20秒ほどかかります</div>
+      </div>
+    </div>
+
+    <!-- タブ2: 保存済み履歴 -->
+    <div id="tab-history" class="card hidden">
+      <h2>📚 保存済みの問題集</h2>
+      <div id="history-list"></div>
+    </div>
+
+    <!-- タブ3: 共有データ読み込み -->
+    <div id="tab-import" class="card hidden">
+      <h2>📥 共有された問題を読み込む</h2>
+      <p style="font-size:0.85rem; color:var(--sub); margin-top:0;">
+        他の人から送られた問題データ（JSONテキスト）を貼り付けると、APIキー不要ですぐに解けます。
+      </p>
+      <textarea id="import-text" rows="6" placeholder='{"title":"...","questions":[...]}'></textarea>
+      <button class="btn btn-primary" onclick="importQuizData()">読み込んで保存・開始</button>
+    </div>
+  </div>
+
+  <!-- クイズ実行画面 -->
+  <div id="quiz-view" class="hidden">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <span id="quiz-progress" style="font-weight:700; color:var(--primary);">第 1 / 10 問</span>
+        <button class="btn btn-outline btn-sm" onclick="exitQuiz()">中断して戻る</button>
+      </div>
+      <div id="question-type-badge" class="badge">4択問題</div>
+      <div id="question-text" class="question-text"></div>
+
+      <!-- 4択・○×用選択肢エリア -->
+      <div id="options-area"></div>
+
+      <!-- 穴埋め入力エリア -->
+      <div id="fill-area" class="hidden">
+        <input type="text" id="fill-input" placeholder="答えを入力してください">
+        <button id="fill-submit-btn" class="btn btn-primary" onclick="submitFillAnswer()">回答する</button>
+      </div>
+
+      <!-- 解説エリア -->
+      <div id="explanation-area" class="explanation-box hidden">
+        <div id="result-judge" style="font-weight:700; font-size:1.05rem; margin-bottom:6px;"></div>
+        <div id="explanation-text"></div>
+        <button id="next-btn" class="btn btn-primary" style="margin-top:14px;" onclick="nextQuestion()">次の問題へ ➔</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 結果画面 -->
+  <div id="result-view" class="hidden">
+    <div class="card" style="text-align:center;">
+      <h2>🎉 テスト完了！</h2>
+      <div id="score-display" style="font-size:2.5rem; font-weight:800; color:var(--primary); margin:10px 0;"></div>
+      <p id="score-comment" style="color:var(--sub); margin-bottom:20px;"></p>
+
+      <button id="retry-wrong-btn" class="btn btn-danger" style="margin-bottom:10px;" onclick="retryWrongOnly()">🔥 間違えた問題だけ再挑戦</button>
+      <button class="btn btn-outline" style="margin-bottom:10px;" onclick="restartCurrentQuiz()">🔄 最初からもう一度解く</button>
+      <button class="btn btn-primary" onclick="exitQuiz()">🏠 ホームに戻る</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let selectedImages = []; // { mimeType, base64 }
+  let currentQuiz = null;
+  let activeQuestions = [];
+  let currentIndex = 0;
+  let score = 0;
+  let wrongQuestions = [];
+
+  // 初期化
+  window.onload = () => {
+    const savedKey = localStorage.getItem('gemini_api_key');
+    const savedModel = localStorage.getItem('gemini_model');
+    if (savedKey) document.getElementById('api-key-input').value = savedKey;
+    if (savedModel) document.getElementById('model-select').value = savedModel;
+    if (!savedKey) {
+      document.getElementById('settings-panel').classList.remove('hidden');
+    }
+    renderHistory();
+  };
+
+  function toggleSettings() {
+    document.getElementById('settings-panel').classList.toggle('hidden');
+  }
+
+  function saveSettings() {
+    const key = document.getElementById('api-key-input').value.trim();
+    const model = document.getElementById('model-select').value;
+    if (!key) {
+      alert('APIキーを入力してください');
+      return;
+    }
+    localStorage.setItem('gemini_api_key', key);
+    localStorage.setItem('gemini_model', model);
+    document.getElementById('settings-panel').classList.add('hidden');
+    alert('API設定を保存しました');
+  }
+
+  function switchTab(tabName) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-create').classList.add('hidden');
+    document.getElementById('tab-history').classList.add('hidden');
+    document.getElementById('tab-import').classList.add('hidden');
+
+    if (tabName === 'create') {
+      document.querySelectorAll('.tab')[0].classList.add('active');
+      document.getElementById('tab-create').classList.remove('hidden');
+    } else if (tabName === 'history') {
+      document.querySelectorAll('.tab')[1].classList.add('active');
+      document.getElementById('tab-history').classList.remove('hidden');
+      renderHistory();
+    } else {
+      document.querySelectorAll('.tab')[2].classList.add('active');
+      document.getElementById('tab-import').classList.remove('hidden');
+    }
+  }
+
+  // 画像選択＆リサイズ圧縮処理（通信量削減と高速化のため）
+  async function handleImageSelect(event) {
+    const files = Array.from(event.target.files);
+    if (!files.length) return;
+    selectedImages = [];
+    const previewGrid = document.getElementById('preview-grid');
+    previewGrid.innerHTML = '';
+
+    for (const file of files) {
+      const compressed = await compressImage(file, 1400, 0.8);
+      selectedImages.push(compressed);
+      const div = document.createElement('div');
+      div.className = 'preview-item';
+      div.innerHTML = `<img src="data:${compressed.mimeType};base64,${compressed.base64}">`;
+      previewGrid.appendChild(div);
+    }
+  }
+
+  function compressImage(file, maxWidth, quality) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let w = img.width;
+          let h = img.height;
+          if (w > maxWidth) {
+            h = Math.round((h * maxWidth) / w);
+            w = maxWidth;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve({
+            mimeType: 'image/jpeg',
+            base64: dataUrl.split(',')[1]
+          });
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Gemini APIを呼び出して問題生成
+  async function generateQuiz() {
+    const apiKey = localStorage.getItem('gemini_api_key');
+    if (!apiKey) {
+      alert('先に右上の「⚙️ API設定」からGemini APIキーを入力してください。');
+      document.getElementById('settings-panel').classList.remove('hidden');
+      return;
+    }
+    if (selectedImages.length === 0) {
+      alert('画像を1枚以上選択してください。');
+      return;
+    }
+
+    const model = localStorage.getItem('gemini_model') || 'gemini-2.5-flash';
+    const style = document.getElementById('quiz-style').value;
+    const count = document.getElementById('quiz-count').value;
+    const customPrompt = document.getElementById('custom-prompt').value.trim();
+    const userTitle = document.getElementById('quiz-title').value.trim();
+
+    const styleInstruction = {
+      mix: '4択問題(choice)、○×問題(ox)、穴埋め問題(fill)をバランスよく混ぜて作成してください。',
+      choice: 'すべて4択問題(choice)で作成してください。',
+      ox: 'すべて○×問題(ox)で作成してください。optionsは必ず["○", "×"]にしてください。',
+      fill: 'すべて穴埋め問題(fill)で作成してください。問題文中の空欄は「（　　　）」とし、optionsは空配列[]にしてください。'
+    }[style];
+
+    const promptText = `
+あなたは優秀な試験問題作成者です。添付された資料画像の内容から、学習用の確認テストを【${count}問】作成してください。
+${styleInstruction}
+${customPrompt ? `追加指示: ${customPrompt}` : ''}
+
+必ず以下の厳密なJSONフォーマットのみを出力してください（マークダウンのコードブロック等は不要です）。
+{
+  "title": "画像の内容を表す短いタイトル",
+  "questions": [
+    {
+      "type": "choice" | "ox" | "fill",
+      "question": "問題文",
+      "options": ["選択肢1", "選択肢2", "選択肢3", "選択肢4"],
+      "answer": "正解の文字列（choiceならoptionsのいずれかと完全一致、oxなら'○'または'×'、fillなら簡潔な正解語句）",
+      "explanation": "なぜそれが正解になるのかの分かりやすい解説"
+    }
+  ]
+}
+`;
+
+    const parts = [{ text: promptText }];
+    selectedImages.forEach(img => {
+      parts.push({
+        inlineData: {
+          mimeType: img.mimeType,
+          data: img.base64
+        }
+      });
+    });
+
+    document.getElementById('generate-btn').disabled = true;
+    document.getElementById('loader').style.display = 'block';
+
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts }],
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.4
+          }
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error?.message || 'APIリクエストに失敗しました');
+      }
+
+      const rawText = data.candidates[0].content.parts[0].text;
+      const quizData = JSON.parse(rawText);
+
+      if (userTitle) quizData.title = userTitle;
+      quizData.id = Date.now();
+      quizData.createdAt = new Date().toLocaleDateString('ja-JP');
+
+      saveToHistory(quizData);
+      startQuiz(quizData);
+
+    } catch (err) {
+      alert('エラーが発生しました:\n' + err.message);
+    } finally {
+      document.getElementById('generate-btn').disabled = false;
+      document.getElementById('loader').style.display = 'none';
+    }
+  }
+
+  // 履歴保存・管理
+  function getHistory() {
+    return JSON.parse(localStorage.getItem('snapquiz_history') || '[]');
+  }
+
+  function saveToHistory(quizData) {
+    const history = getHistory();
+    history.unshift(quizData);
+    localStorage.setItem('snapquiz_history', JSON.stringify(history));
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const history = getHistory();
+    document.getElementById('history-count').textContent = history.length;
+    const listEl = document.getElementById('history-list');
+    if (history.length === 0) {
+      listEl.innerHTML = '<p style="color:var(--sub); font-size:0.9rem;">まだ保存された問題はありません。</p>';
+      return;
+    }
+
+    listEl.innerHTML = history.map((item, idx) => `
+      <div class="history-item">
+        <div class="history-title">${escapeHtml(item.title)}</div>
+        <div class="history-meta">作成日: ${item.createdAt} ｜ 全 ${item.questions.length} 問</div>
+        <div class="history-actions">
+          <button class="btn btn-primary btn-sm" onclick="startQuizByIndex(${idx})">▶ 解く</button>
+          <button class="btn btn-outline btn-sm" onclick="shareQuiz(${idx})">📤 共有</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteQuiz(${idx})">削除</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function startQuizByIndex(idx) {
+    const history = getHistory();
+    startQuiz(history[idx]);
+  }
+
+  function deleteQuiz(idx) {
+    if (!confirm('この問題集を削除しますか？')) return;
+    const history = getHistory();
+    history.splice(idx, 1);
+    localStorage.setItem('snapquiz_history', JSON.stringify(history));
+    renderHistory();
+  }
+
+  // 共有＆インポート機能
+  async function shareQuiz(idx) {
+    const history = getHistory();
+    const jsonStr = JSON.stringify(history[idx]);
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: history[idx].title,
+          text: jsonStr
+        });
+        return;
+      } catch (e) {}
+    }
+    navigator.clipboard.writeText(jsonStr).then(() => {
+      alert('問題データをクリップボードにコピーしました！\nLINEやメモに貼り付けて共有できます。');
+    });
+  }
+
+  function importQuizData() {
+    const text = document.getElementById('import-text').value.trim();
+    if (!text) return;
+    try {
+      const parsed = JSON.parse(text);
+      if (!parsed.questions || !Array.isArray(parsed.questions)) {
+        throw new Error('正しい問題データ形式ではありません');
+      }
+      parsed.id = Date.now();
+      parsed.createdAt = new Date().toLocaleDateString('ja-JP');
+      if (!parsed.title) parsed.title = '共有された問題集';
+      saveToHistory(parsed);
+      document.getElementById('import-text').value = '';
+      startQuiz(parsed);
+    } catch (e) {
+      alert('読み込み失敗: データが破損しているか形式が違います。');
+    }
+  }
+
+  // クイズ実行ロジック
+  function startQuiz(quizData, customQuestions = null) {
+    currentQuiz = quizData;
+    activeQuestions = customQuestions || [...quizData.questions];
+    currentIndex = 0;
+    score = 0;
+    wrongQuestions = [];
+
+    document.getElementById('home-view').classList.add('hidden');
+    document.getElementById('result-view').classList.add('hidden');
+    document.getElementById('quiz-view').classList.remove('hidden');
+    showQuestion();
+  }
+
+  function showQuestion() {
+    const q = activeQuestions[currentIndex];
+    document.getElementById('quiz-progress').textContent = `第 ${currentIndex + 1} / ${activeQuestions.length} 問`;
+    document.getElementById('question-text').textContent = q.question;
+    document.getElementById('explanation-area').classList.add('hidden');
+
+    const badgeMap = { choice: '4択問題', ox: '○×問題', fill: '穴埋め問題' };
+    document.getElementById('question-type-badge').textContent = badgeMap[q.type] || '問題';
+
+    const optionsArea = document.getElementById('options-area');
+    const fillArea = document.getElementById('fill-area');
+    optionsArea.innerHTML = '';
+
+    if (q.type === 'fill') {
+      optionsArea.classList.add('hidden');
+      fillArea.classList.remove('hidden');
+      const input = document.getElementById('fill-input');
+      input.value = '';
+      input.disabled = false;
+      document.getElementById('fill-submit-btn').disabled = false;
+    } else {
+      fillArea.classList.add('hidden');
+      optionsArea.classList.remove('hidden');
+      const opts = q.type === 'ox' ? ['○', '×'] : q.options;
+      opts.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.textContent = opt;
+        btn.onclick = () => checkChoiceAnswer(btn, opt, q);
+        optionsArea.appendChild(btn);
+      });
+    }
+  }
+
+  function checkChoiceAnswer(selectedBtn, selectedVal, q) {
+    const buttons = document.querySelectorAll('.option-btn');
+    buttons.forEach(b => b.disabled = true);
+
+    const isCorrect = selectedVal.trim() === q.answer.trim();
+    if (isCorrect) {
+      selectedBtn.classList.add('correct');
+      score++;
+    } else {
+      selectedBtn.classList.add('wrong');
+      wrongQuestions.push(q);
+      buttons.forEach(b => {
+        if (b.textContent.trim() === q.answer.trim()) b.classList.add('correct');
+      });
+    }
+    showExplanation(isCorrect, q);
+  }
+
+  function submitFillAnswer() {
+    const q = activeQuestions[currentIndex];
+    const input = document.getElementById('fill-input');
+    const userVal = input.value.trim();
+    if (!userVal) return;
+
+    input.disabled = true;
+    document.getElementById('fill-submit-btn').disabled = true;
+
+    // 全角半角・大文字小文字をある程度吸収して判定
+    const normalize = s => s.replace(/\s+/g, '').toLowerCase();
+    const isCorrect = normalize(userVal) === normalize(q.answer);
+
+    if (isCorrect) {
+      score++;
+    } else {
+      wrongQuestions.push(q);
+    }
+    showExplanation(isCorrect, q);
+  }
+
+  function showExplanation(isCorrect, q) {
+    const judgeEl = document.getElementById('result-judge');
+    if (isCorrect) {
+      judgeEl.textContent = '⭕ 正解！';
+      judgeEl.style.color = 'var(--success)';
+    } else {
+      judgeEl.textContent = `❌ 不正解（正解: ${q.answer}）`;
+      judgeEl.style.color = 'var(--danger)';
+    }
+    document.getElementById('explanation-text').textContent = q.explanation;
+    document.getElementById('next-btn').textContent =
+      (currentIndex + 1 < activeQuestions.length) ? '次の問題へ ➔' : '結果を見る 🏆';
+    document.getElementById('explanation-area').classList.remove('hidden');
+  }
+
+  function nextQuestion() {
+    currentIndex++;
+    if (currentIndex < activeQuestions.length) {
+      showQuestion();
+    } else {
+      showResult();
+    }
+  }
+
+  function showResult() {
+    document.getElementById('quiz-view').classList.add('hidden');
+    document.getElementById('result-view').classList.remove('hidden');
+
+    const total = activeQuestions.length;
+    const rate = Math.round((score / total) * 100);
+    document.getElementById('score-display').textContent = `${score} / ${total} 問 (${rate}%)`;
+
+    if (rate === 100) {
+      document.getElementById('score-comment').textContent = '完璧です！この範囲はバッチリですね。';
+    } else if (rate >= 70) {
+      document.getElementById('score-comment').textContent = 'いい調子です！間違えた箇所を復習して完璧にしましょう。';
+    } else {
+      document.getElementById('score-comment').textContent = '解説を確認して、もう一度チャレンジしてみましょう！';
+    }
+
+    const retryWrongBtn = document.getElementById('retry-wrong-btn');
+    if (wrongQuestions.length > 0) {
+      retryWrongBtn.classList.remove('hidden');
+      retryWrongBtn.textContent = `🔥 間違えた問題だけ再挑戦 (${wrongQuestions.length}問)`;
+    } else {
+      retryWrongBtn.classList.add('hidden');
+    }
+  }
+
+  function retryWrongOnly() {
+    startQuiz(currentQuiz, [...wrongQuestions]);
+  }
+
+  function restartCurrentQuiz() {
+    startQuiz(currentQuiz);
+  }
+
+  function exitQuiz() {
+    document.getElementById('quiz-view').classList.add('hidden');
+    document.getElementById('result-view').classList.add('hidden');
+    document.getElementById('home-view').classList.remove('hidden');
+    renderHistory();
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+  }
+</script>
+</body>
+</html>
