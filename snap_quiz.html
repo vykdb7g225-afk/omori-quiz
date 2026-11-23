@@ -241,8 +241,7 @@
     <input type="password" id="api-key-input" placeholder="AIzaSy...">
     <label>使用モデル（通常は変更不要）</label>
     <select id="model-select">
-      <option value="gemini-2.5-flash">gemini-2.5-flash（高速・推奨）</option>
-      <option value="gemini-2.5-pro">gemini-2.5-pro（高精度）</option>
+      <option value="gemini-3.8-flash">gemini-3.8-flash（高速・推奨）</option>
     </select>
     <button class="btn btn-primary" onclick="saveSettings()">保存して閉じる</button>
   </div>
@@ -364,6 +363,7 @@
 </div>
 
 <script>
+  const DEFAULT_MODEL = 'gemini-3.8-flash';
   let selectedImages = []; // { mimeType, base64 }
   let currentQuiz = null;
   let activeQuestions = [];
@@ -374,9 +374,9 @@
   // 初期化
   window.onload = () => {
     const savedKey = localStorage.getItem('gemini_api_key');
-    const savedModel = localStorage.getItem('gemini_model');
+    localStorage.setItem('gemini_model', DEFAULT_MODEL);
     if (savedKey) document.getElementById('api-key-input').value = savedKey;
-    if (savedModel) document.getElementById('model-select').value = savedModel;
+    document.getElementById('model-select').value = DEFAULT_MODEL;
     if (!savedKey) {
       document.getElementById('settings-panel').classList.remove('hidden');
     }
@@ -389,13 +389,12 @@
 
   function saveSettings() {
     const key = document.getElementById('api-key-input').value.trim();
-    const model = document.getElementById('model-select').value;
     if (!key) {
       alert('APIキーを入力してください');
       return;
     }
     localStorage.setItem('gemini_api_key', key);
-    localStorage.setItem('gemini_model', model);
+    localStorage.setItem('gemini_model', DEFAULT_MODEL);
     document.getElementById('settings-panel').classList.add('hidden');
     alert('API設定を保存しました');
   }
@@ -479,7 +478,7 @@
       return;
     }
 
-    const model = localStorage.getItem('gemini_model') || 'gemini-2.5-flash';
+    const model = DEFAULT_MODEL;
     const style = document.getElementById('quiz-style').value;
     const count = document.getElementById('quiz-count').value;
     const customPrompt = document.getElementById('custom-prompt').value.trim();
